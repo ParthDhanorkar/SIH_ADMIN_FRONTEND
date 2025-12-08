@@ -14,6 +14,8 @@ const mockBeneficiaries = [
   { id: "BEN003", name: "Amit Patel", creditScore: 750, riskBand: "Low", totalLoans: 4, activeLoans: 2, repaymentStatus: "Good" },
   { id: "BEN004", name: "Sunita Reddy", creditScore: 650, riskBand: "Medium", totalLoans: 2, activeLoans: 1, repaymentStatus: "Warning" },
   { id: "BEN005", name: "Vikram Singh", creditScore: 580, riskBand: "High", totalLoans: 1, activeLoans: 1, repaymentStatus: "Warning" },
+  { id: "BEN005", name: "Vikram Singh", creditScore: 580, riskBand: "High", totalLoans: 1, activeLoans: 1, repaymentStatus: "Warning" },
+  { id: "BEN005", name: "Vikram Singh", creditScore: 580, riskBand: "High", totalLoans: 1, activeLoans: 1, repaymentStatus: "Warning" },
 ];
 
 const Beneficiaries = () => {
@@ -69,48 +71,45 @@ const Beneficiaries = () => {
             <CardTitle>All Beneficiaries ({filteredBeneficiaries.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Beneficiary ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Credit Score</TableHead>
-                  <TableHead>Risk Band</TableHead>
-                  <TableHead>Total Loans</TableHead>
-                  <TableHead>Active Loans</TableHead>
-                  <TableHead>Repayment Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredBeneficiaries.map((beneficiary) => (
-                  <TableRow key={beneficiary.id}>
-                    <TableCell className="font-medium">{beneficiary.id}</TableCell>
-                    <TableCell>{beneficiary.name}</TableCell>
-                    <TableCell>{beneficiary.creditScore}</TableCell>
-                    <TableCell>
-                      <Badge variant={getRiskBadgeVariant(beneficiary.riskBand)}>
-                        {beneficiary.riskBand}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{beneficiary.totalLoans}</TableCell>
-                    <TableCell>{beneficiary.activeLoans}</TableCell>
-                    <TableCell>
-                      <Badge variant={getRepaymentBadgeVariant(beneficiary.repaymentStatus)}>
-                        {beneficiary.repaymentStatus}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="ghost">
-                        <Eye className="h-4 w-4 mr-1" />
-                        View Profile
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
+  <div className="max-h-72 overflow-y-auto rounded-md border">
+    <Table>
+      <TableHeader className="sticky top-0 bg-white z-20 shadow-sm">
+        <TableRow>
+          <TableHead>Beneficiary ID</TableHead>
+          <TableHead>Name</TableHead>
+          <TableHead>Credit Score</TableHead>
+          <TableHead>Risk Band</TableHead>
+          <TableHead>Total Loans</TableHead>
+          <TableHead>Active Loans</TableHead>
+          <TableHead>Repayment Status</TableHead>
+        </TableRow>
+      </TableHeader>
+
+      <TableBody>
+        {filteredBeneficiaries.map((beneficiary) => (
+          <TableRow key={beneficiary.id}>
+            <TableCell className="font-medium">{beneficiary.id}</TableCell>
+            <TableCell>{beneficiary.name}</TableCell>
+            <TableCell>{beneficiary.creditScore}</TableCell>
+            <TableCell>
+              <Badge variant={getRiskBadgeVariant(beneficiary.riskBand)}>
+                {beneficiary.riskBand}
+              </Badge>
+            </TableCell>
+            <TableCell>{beneficiary.totalLoans}</TableCell>
+            <TableCell>{beneficiary.activeLoans}</TableCell>
+            <TableCell>
+              <Badge variant={getRepaymentBadgeVariant(beneficiary.repaymentStatus)}>
+                {beneficiary.repaymentStatus}
+              </Badge>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </div>
+</CardContent>
+
         </Card>
       </div>
     </AdminLayout>

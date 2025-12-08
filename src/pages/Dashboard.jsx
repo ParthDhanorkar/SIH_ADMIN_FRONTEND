@@ -5,9 +5,97 @@ import { Users, DollarSign, Clock, TrendingUp, CheckCircle, AlertCircle } from "
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { useState } from 'react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [chartType, setChartType] = useState('pie'); // 'pie' or 'bar'
+
+  const riskData = [
+    { name: 'Low Risk', value: 65, color: '#10b981', bgColor: '#d1fae5' },
+    { name: 'Medium Risk', value: 28, color: '#f59e0b', bgColor: '#fef3c7' },
+    { name: 'High Risk', value: 7, color: '#ef4444', bgColor: '#fee2e2' }
+  ];
+
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0];
+      return (
+        <div className="bg-white p-4 rounded-lg shadow-xl border-2" style={{ borderColor: data.payload.color }}>
+          <p className="font-semibold text-gray-900 mb-1">{data.name}</p>
+          <p className="text-lg font-bold" style={{ color: data.payload.color }}>
+            {data.value}%
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            of total applications
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const renderPieChart = () => (
+    <ResponsiveContainer width="100%" height={320}>
+      <PieChart>
+        <Pie
+          data={riskData}
+          cx="50%"
+          cy="50%"
+          labelLine={false}
+          label={({ name, value }) => `${value}%`}
+          outerRadius={110}
+          innerRadius={60}
+          fill="#8884d8"
+          dataKey="value"
+          paddingAngle={2}
+        >
+          {riskData.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={entry.color} />
+          ))}
+        </Pie>
+        <Tooltip content={<CustomTooltip />} />
+        <Legend 
+          verticalAlign="bottom" 
+          height={36}
+          iconType="circle"
+          formatter={(value, entry) => (
+            <span className="text-sm font-medium text-gray-700">{value}</span>
+          )}
+        />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+
+  const renderBarChart = () => (
+    <ResponsiveContainer width="100%" height={320}>
+      <BarChart data={riskData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+        <XAxis 
+          dataKey="name" 
+          tick={{ fill: '#6b7280', fontSize: 12 }}
+          axisLine={{ stroke: '#d1d5db' }}
+        />
+        <YAxis 
+          label={{ 
+            value: 'Percentage (%)', 
+            angle: -90, 
+            position: 'insideLeft',
+            style: { fill: '#6b7280', fontSize: 12 }
+          }}
+          tick={{ fill: '#6b7280', fontSize: 12 }}
+          axisLine={{ stroke: '#d1d5db' }}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Bar dataKey="value" radius={[8, 8, 0, 0]} maxBarSize={100}>
+          {riskData.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={entry.color} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
 
   return (
     <AdminLayout>
@@ -18,7 +106,7 @@ const Dashboard = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6 mb-8">
           <StatCard
             title="Total Beneficiaries"
             value="1,248"
@@ -38,12 +126,6 @@ const Dashboard = () => {
             icon={Clock}
             trend="Requires review"
             variant="warning"
-          />
-          <StatCard
-            title="Default Rate"
-            value="2.3%"
-            icon={TrendingUp}
-            trend="-0.5% improvement"
           />
         </div>
 
@@ -84,34 +166,56 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Risk Band Distribution */}
-        <Card className="shadow-card">
+        {/* Risk Band Distribution with Charts */}
+        <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>Risk Band Distribution</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Risk Band Distribution</CardTitle>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setChartType('pie')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    chartType === 'pie'
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+                  }`}
+                >
+                  Pie Chart
+                </button>
+                <button
+                  onClick={() => setChartType('bar')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    chartType === 'bar'
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+                  }`}
+                >
+                  Bar Chart
+                </button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-24 text-sm font-medium text-muted-foreground">Low Risk</div>
-                <div className="flex-1 h-8 bg-success/20 rounded-full overflow-hidden">
-                  <div className="h-full bg-success" style={{ width: "65%" }}></div>
+            {chartType === 'pie' ? renderPieChart() : renderBarChart()}
+            
+            {/* Summary Statistics */}
+            <div className="mt-8 grid grid-cols-3 gap-6">
+              {riskData.map((item) => (
+                <div
+                  key={item.name}
+                  className="relative p-6 rounded-xl border-2 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer"
+                  style={{ 
+                    borderColor: item.color,
+                    backgroundColor: item.bgColor
+                  }}
+                >
+                  <div className="text-sm font-medium text-gray-600 mb-2">{item.name}</div>
+                  <div className="text-3xl font-bold mb-1" style={{ color: item.color }}>
+                    {item.value}%
+                  </div>
+                  <div className="text-xs text-gray-500">of applications</div>
                 </div>
-                <div className="w-16 text-right text-sm font-medium">65%</div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-24 text-sm font-medium text-muted-foreground">Medium Risk</div>
-                <div className="flex-1 h-8 bg-warning/20 rounded-full overflow-hidden">
-                  <div className="h-full bg-warning" style={{ width: "28%" }}></div>
-                </div>
-                <div className="w-16 text-right text-sm font-medium">28%</div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-24 text-sm font-medium text-muted-foreground">High Risk</div>
-                <div className="flex-1 h-8 bg-destructive/20 rounded-full overflow-hidden">
-                  <div className="h-full bg-destructive" style={{ width: "7%" }}></div>
-                </div>
-                <div className="w-16 text-right text-sm font-medium">7%</div>
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>

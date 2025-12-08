@@ -11,6 +11,7 @@ import LoanApproval from "./pages/LoanApproval.jsx";
 import LoanTracking from "./pages/LoanTracking.jsx";
 import Reports from "./pages/Reports.jsx";
 import NotFound from "./pages/NotFound.jsx";
+import ApproveRejectLoan from "./pages/ApproveRejectLoan.jsx";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/loan-approval" element={<LoanApproval />} />
+          <Route path="/approve-reject-Loan" element={<ApproveRejectLoan/>} />
           <Route path="/beneficiaries" element={<Beneficiaries />} />
           <Route path="/loan-tracking" element={<LoanTracking />} />
           <Route path="/reports" element={<Reports />} />
