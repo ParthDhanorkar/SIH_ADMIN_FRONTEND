@@ -1,7 +1,9 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import { createClient } from "@supabase/supabase-js";
+// index.js (CommonJS Version)
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const { createClient } = require("@supabase/supabase-js");
+const loanApprovalRoute = require("./routes/loanApprovalRoute.js");
 
 dotenv.config();
 
@@ -9,7 +11,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Supabase client
+// Supabase Client
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
@@ -27,15 +29,10 @@ const clean = (obj = null) => {
     "updated_at",
   ];
 
-  for (const key of remove) {
-    delete obj[key];
-  }
-
+  for (const key of remove) delete obj[key];
   return obj;
 };
 
-
-// API Route
 app.get("/loan/:loanId", async (req, res) => {
   const { loanId } = req.params;
 
@@ -178,5 +175,9 @@ app.get("/loan/:loanId", async (req, res) => {
   }
 });
 
+// =======================================================
+// REGISTER Loan Approval Routes
+// =======================================================
+app.use("/api", loanApprovalRoute);
 
-app.listen(3000, () => console.log("Server running on port 3000"));
+app.listen(3000, () => console.log("🚀 Server running on port 3000"));
