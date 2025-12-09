@@ -4,7 +4,7 @@ const router = express.Router();
 
 
 function mapToModel(input, previousLoans = []) {
-    const appliedDate = new Date(input.track_application.applied_on);
+    const appliedDate = new Date(input.track_application.applied_on || new Date());
     const today = new Date();
 
     // Calculate repayments
@@ -13,10 +13,10 @@ function mapToModel(input, previousLoans = []) {
         (today.getMonth() - appliedDate.getMonth());
     const repayments_made = diffMonths > 0 ? diffMonths : 0;
 
-    const loanAmountSanctioned = Number(input.track_application.loan_amount_applied) || 0;
-    const loanAmountDisbursed = Number(input.track_application.loan_amount_approved) || 0;
+    const loanAmountSanctioned = Number(input.track_application.loan_amount_applied) || Math.floor(Math.random() * 50000) + 10000;
+    const loanAmountDisbursed = Number(input.track_application.loan_amount_approved) || Math.floor(Math.random() * loanAmountSanctioned);
 
-    const emi = input.apply_for_loan?.emi_amount || 0;
+    const emi = input.apply_for_loan?.emi_amount || Math.floor(loanAmountDisbursed / (input.track_application.tenure_applied || 12));
     const totalAmountRepaid = emi * repayments_made;
 
     const previousLoansCount = previousLoans.length;
@@ -24,58 +24,51 @@ function mapToModel(input, previousLoans = []) {
 
     // Electricity and Water derived
     const totalBills =
-        (input.electricity_bill?.elec_total_bills || 0) +
-        (input.water_bill?.water_total_bills_3m || 0);
+        (input.electricity_bill?.elec_total_bills || Math.floor(Math.random() * 3) + 1) +
+        (input.water_bill?.water_total_bills_3m || Math.floor(Math.random() * 3) + 1);
 
     const onTimeBills =
-        (input.electricity_bill?.elec_on_time_bills_3m || 0) +
-        (input.water_bill?.water_on_time_bills_3m || 0);
+        (input.electricity_bill?.elec_on_time_bills_3m || Math.floor(Math.random() * 3)) +
+        (input.water_bill?.water_on_time_bills_3m || Math.floor(Math.random() * 3));
 
     const utilOnTimeRatio = totalBills > 0 ? (onTimeBills / totalBills) : 0;
 
     const avgDelay =
-        ((input.electricity_bill?.elec_total_delay_days_3m || 0) +
-            (input.water_bill?.water_total_delay_days_3m || 0)) / 2;
+        ((input.electricity_bill?.elec_total_delay_days_3m || Math.floor(Math.random() * 5)) +
+            (input.water_bill?.water_total_delay_days_3m || Math.floor(Math.random() * 5))) / 2;
 
     const maxDelay = Math.max(
-        input.electricity_bill?.elec_max_delay_days_3m || 0,
-        input.water_bill?.water_max_delay_days_3m || 0
+        input.electricity_bill?.elec_max_delay_days_3m || Math.floor(Math.random() * 5),
+        input.water_bill?.water_max_delay_days_3m || Math.floor(Math.random() * 5)
     );
 
     const outstanding =
-        (input.electricity_bill?.elec_outstanding_amount_current || 0) +
-        (input.water_bill?.water_outstanding_amt_current || 0);
+        (input.electricity_bill?.elec_outstanding_amount_current || Math.floor(Math.random() * 500)) +
+        (input.water_bill?.water_outstanding_amt_current || Math.floor(Math.random() * 1000));
 
     return {
-        // CRITICAL
         loan_amount_sanctioned: loanAmountSanctioned,
         loan_amount_disbursed: loanAmountDisbursed,
-        loan_tenure_months: input.track_application.tenure_approved || 0,
-        interest_rate: input.apply_for_loan?.interest_rate || 12,
+        loan_tenure_months: input.track_application.tenure_approved || (input.track_application.tenure_applied || Math.floor(Math.random() * 60) + 12),
+        interest_rate: input.apply_for_loan?.interest_rate || (Math.random() * 5 + 10).toFixed(2), // 10-15%
         emi_amount: emi,
-        repayments_made: repayments_made,
+        repayments_made,
         total_amount_repaid: totalAmountRepaid,
 
-        // RANDOM 0–5 (as requested)
-        dpd_days: Math.floor(Math.random() * 6), // 0,1,2,3,4,5
-
-        default_flag: 0,
-        npa_status: 0,
+        dpd_days: Math.floor(Math.random() * 6), // 0-5
+        default_flag: Math.round(Math.random()),  // 0 or 1
+        npa_status: Math.round(Math.random()),    // 0 or 1
 
         repeat_borrower_flag: repeatBorrowerFlag,
         previous_loans_count: previousLoansCount,
-        previous_defaults_count: 0,
+        previous_defaults_count: Math.floor(Math.random() * 3),
 
-        // SMART DEFAULTS (NO RANDOM)
         loan_utilization_match_flag: input.apply_for_loan?.purpose_of_loan ? 1 : 0,
-        cashflow_seasonality_score:
-            input.beneficiary.occupation === "Salaried_Govt" ? 0 : 2,
-        inventory_purchase_ratio:
-            input.beneficiary.occupation === "business" ? 0.6 : 0.2,
-        business_monthly_revenue: input.income_asset.monthly_income || 0,
-        business_operational_years: 1,
+        cashflow_seasonality_score: Math.floor(Math.random() * 6), // 0-5
+        inventory_purchase_ratio: Math.random().toFixed(2),        // 0.00 - 1.00
+        business_monthly_revenue: input.income_asset?.monthly_income || Math.floor(Math.random() * 50000) + 5000,
+        business_operational_years: Math.floor(Math.random() * 10) + 1,
 
-        // UTILITIES (COMPUTED)
         util_on_time_ratio: utilOnTimeRatio,
         util_avg_delay_days: avgDelay,
         util_max_delay_days: maxDelay,
@@ -143,10 +136,12 @@ async function generateRiskBand(supabase, loanId) {
         });
 
         return {
-            risk_band: mlResponse.data?.risk_band || "UNKNOWN",
-            score: mlResponse.data?.score || null,
+            risk_band: mlResponse.data?.risk_label || "UNKNOWN",
+            score: mlResponse.data?.probability || null,
+            class_index: mlResponse.data?.class_index || null,
             modelInput,
         };
+
     } catch (err) {
         console.error("RISK BAND ERROR:", err);
         return { error: "Failed to generate risk band" };

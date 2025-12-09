@@ -44,6 +44,8 @@ const loanHistoryRoute = require("./routes/loanHistoryRoute.js");
 // Mount Routes
 app.use("/loan", loanApprovalRoute);
 app.use("/riskband", riskbandRouter);
+const needbandRouter = require('./routes/needband');
+app.use('/needband', needbandRouter);
 app.use("/api", loanHistoryRoute);
 
 // Start Server
@@ -53,7 +55,8 @@ app.listen(PORT, () => {
 });
 
 
-
+const fraudDetection = require('./routes/fraudDetection.js');
+app.use('/fraudband', fraudDetection);
 app.get("/loan/:loanId", async (req, res) => {
   const { loanId } = req.params;
 
