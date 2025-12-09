@@ -12,10 +12,10 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [chartType, setChartType] = useState('pie'); // 'pie' or 'bar'
 
-  const riskData = [
-    { name: 'Low Risk', value: 65, color: '#10b981', bgColor: '#d1fae5' },
-    { name: 'Medium Risk', value: 28, color: '#f59e0b', bgColor: '#fef3c7' },
-    { name: 'High Risk', value: 7, color: '#ef4444', bgColor: '#fee2e2' }
+   const riskData = [
+    { name: 'Low Risk', value: 65, color: '#16a34a', bgColor: '#1afd6aff' },
+    { name: 'Medium Risk', value: 28, color: '#eab308', bgColor: '#fceb37ff' },
+    { name: 'High Risk', value: 7, color: '#dc2626', bgColor: '#f67a7aff' }
   ];
 
   const CustomTooltip = ({ active, payload }) => {
@@ -203,17 +203,17 @@ const Dashboard = () => {
               {riskData.map((item) => (
                 <div
                   key={item.name}
-                  className="relative p-6 rounded-xl border-2 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer"
+                  className="relative p-6 rounded-xl border-2 transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer border-black/10"
                   style={{ 
-                    borderColor: item.color,
+                    
                     backgroundColor: item.bgColor
                   }}
                 >
-                  <div className="text-sm font-medium text-gray-600 mb-2">{item.name}</div>
-                  <div className="text-3xl font-bold mb-1" style={{ color: item.color }}>
+                  <div className="text-sm font-medium text-gray-800 mb-2">{item.name}</div>
+                  <div className="text-3xl font-bold mb-1 text-gray" >
                     {item.value}%
                   </div>
-                  <div className="text-xs text-gray-500">of applications</div>
+                  <div className="text-xs text-gray-800">of applications</div>
                 </div>
               ))}
             </div>
