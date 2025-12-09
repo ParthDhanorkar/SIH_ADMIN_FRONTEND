@@ -1,6 +1,5 @@
 // src/components/AdminLayout.jsx
-import { Link, useLocation } from "react-router-dom";
-
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
   FileCheck, 
@@ -12,41 +11,47 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const AUTH_KEY = "nbcfdc_admin_auth";
+
 const AdminLayout = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navItems = [
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/loan-approval", label: "Loan Approval", icon: FileCheck },
     { path: "/approve-reject-Loan", label: "Approved & Rejected Applicants", icon: FileCheck },
-    // { path: "/beneficiaries", label: "Beneficiaries", icon: Users },
-    // { path: "/loan-tracking", label: "Loan Tracking", icon: TrendingUp },
-    // { path: "/reports", label: "Reports", icon: BarChart3 },
   ];
+
+  // 🔐 Logout Handler
+  const handleLogout = () => {
+    localStorage.removeItem(AUTH_KEY);
+    localStorage.removeItem("nbcfdc_admin_username");
+
+    navigate("/", { replace: true });
+  };
 
   return (
     <div className="min-h-screen bg-muted">
       {/* Government Header */}
-     <header className="bg-primary text-primary-foreground border-b-4 border-accent">
-  <div className="container mx-auto px-6 py-4 flex items-center gap-4">
-    {/* Project Logo */}
-    <img 
-      src="https://i.ibb.co/0jPNNJWh/image-icon.png"  
-      alt="Project Logo" 
-      className="h-12 w-12 object-contain"
-    />
+      <header className="bg-primary text-primary-foreground border-b-4 border-accent">
+        <div className="container mx-auto px-6 py-4 flex items-center gap-4">
+          <img 
+            src="https://i.ibb.co/0jPNNJWh/image-icon.png"
+            alt="Project Logo"
+            className="h-12 w-12 object-contain"
+          />
 
-    <div>
-      <h1 className="text-xl font-bold">
-        National Backward Classes Finance & Development Corporation
-      </h1>
-      <p className="text-sm opacity-90">
-        Ministry of Social Justice & Empowerment, Government of India
-      </p>
-    </div>
-  </div>
-</header>
-
+          <div>
+            <h1 className="text-xl font-bold">
+              National Backward Classes Finance & Development Corporation
+            </h1>
+            <p className="text-sm opacity-90">
+              Ministry of Social Justice & Empowerment, Government of India
+            </p>
+          </div>
+        </div>
+      </header>
 
       <div className="flex">
         {/* Sidebar */}
@@ -68,30 +73,32 @@ const AdminLayout = ({ children }) => {
 
               return (
                 <Link key={item.path} to={item.path}>
-                 <Button
-  variant="ghost"
-  className={`w-full justify-start ${
-    isActive
-      ? "bg-sidebar-accent text-sidebar-primary font-semibold"
-      : "text-gray-500 hover:bg-sidebar-accent/50 hover:text-black"
-  }`}
->
-  <Icon className="mr-1 h-5 w-5" />
-  {item.label}
-</Button>
-
+                  <Button
+                    variant="ghost"
+                    className={`w-full justify-start ${
+                      isActive
+                        ? "bg-sidebar-accent text-sidebar-primary font-semibold"
+                        : "text-gray-500 hover:bg-sidebar-accent/50 hover:text-black"
+                    }`}
+                  >
+                    <Icon className="mr-1 h-5 w-5" />
+                    {item.label}
+                  </Button>
                 </Link>
               );
             })}
           </nav>
 
+          {/* 🔐 Logout Button */}
           <div className="absolute bottom-6 left-3 right-3">
-            <Link to="/">
-              <Button variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/50">
-                <LogOut className="mr-3 h-5 w-5" />
-                Logout
-              </Button>
-            </Link>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent/50"
+              onClick={handleLogout}
+            >
+              <LogOut className="mr-3 h-5 w-5" />
+              Logout
+            </Button>
           </div>
         </aside>
 

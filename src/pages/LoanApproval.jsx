@@ -222,7 +222,7 @@ const LoanApproval = () => {
                     <TableHead>Tenure</TableHead>
                     <TableHead>Approval %</TableHead>
                     <TableHead>Band Classification</TableHead>
-                    <TableHead className="text-center">Review</TableHead>
+                    <TableHead className="text-center">Preview</TableHead>
                   </TableRow>
                 </TableHeader>
 
