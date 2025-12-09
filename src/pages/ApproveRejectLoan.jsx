@@ -226,23 +226,25 @@ const ApproveRejectLoan = () => {
   // Filter function
   const filterApplications = (data, searchTerm, selectedScheme, selectedRiskBand) => {
     return data.filter((app) => {
-      const matchesSearch = 
+      const matchesSearch =
         app.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         app.beneficiary.toLowerCase().includes(searchTerm.toLowerCase()) ||
         app.scheme.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesScheme = 
+
+      const matchesScheme =
         selectedScheme === "all" || app.scheme === selectedScheme;
-      
-      const matchesRiskBand = 
-        selectedRiskBand === "all" || 
+
+      const matchesRiskBand =
+        selectedRiskBand === "all" ||
         (selectedRiskBand === "low" && app.bandClassification.includes("Low Risk")) ||
         (selectedRiskBand === "medium" && app.bandClassification.includes("Medium Risk")) ||
         (selectedRiskBand === "high" && app.bandClassification.includes("High Risk"));
-      
+
       return matchesSearch && matchesScheme && matchesRiskBand;
     });
   };
+
+  
 
   const renderTable = (label, data, searchTerm, setSearchTerm, selectedScheme, setSelectedScheme, selectedRiskBand, setSelectedRiskBand) => {
     const filteredData = filterApplications(data, searchTerm, selectedScheme, selectedRiskBand);
@@ -251,7 +253,7 @@ const ApproveRejectLoan = () => {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-xl font-semibold">{label}</CardTitle>
-          
+
           {/* Filter Controls */}
           <div className="flex gap-4 mt-4">
             {/* Search Input */}
@@ -347,13 +349,12 @@ const ApproveRejectLoan = () => {
 
                         <TableCell>
                           <span
-                            className={`px-3 py-1 rounded-full text-sm font-medium ${
-                              app.bandClassification.includes("Low Risk")
+                            className={`px-3 py-1 rounded-full text-sm font-medium ${app.bandClassification.includes("Low Risk")
                                 ? "bg-green-100 text-green-700"
                                 : app.bandClassification.includes("Medium Risk")
-                                ? "bg-orange-100 text-orange-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
+                                  ? "bg-orange-100 text-orange-700"
+                                  : "bg-red-100 text-red-700"
+                              }`}
                           >
                             {app.bandClassification}
                           </span>
@@ -374,7 +375,7 @@ const ApproveRejectLoan = () => {
     <AdminLayout>
       <div className="p-6">
         {renderTable(
-          "Approved Applications", 
+          "Approved Applications",
           applications.filter((a) => a.status === "Approved"),
           approvedSearch,
           setApprovedSearch,
@@ -383,9 +384,9 @@ const ApproveRejectLoan = () => {
           approvedRiskBand,
           setApprovedRiskBand
         )}
-        
+
         {renderTable(
-          "Rejected Applications", 
+          "Rejected Applications",
           applications.filter((a) => a.status === "Rejected"),
           rejectedSearch,
           setRejectedSearch,
