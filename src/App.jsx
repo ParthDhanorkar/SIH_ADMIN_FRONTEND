@@ -18,6 +18,8 @@ import LoanTracking from "./pages/LoanTracking.jsx";
 import Reports from "./pages/Reports.jsx";
 import NotFound from "./pages/NotFound.jsx";
 import ApproveRejectLoan from "./pages/ApproveRejectLoan.jsx";
+import UploadData from "./pages/UploadData.jsx";
+
 
 const queryClient = new QueryClient();
 
@@ -87,10 +89,10 @@ const App = () => (
             }
           />
           <Route
-            path="/reports"
+            path="/upload-data"
             element={
               <RequireAuth>
-                <Reports />
+                <UploadData />
               </RequireAuth>
             }
           />

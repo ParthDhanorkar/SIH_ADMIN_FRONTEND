@@ -21,6 +21,7 @@ const AdminLayout = ({ children }) => {
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/loan-approval", label: "Loan Approval", icon: FileCheck },
     { path: "/approve-reject-Loan", label: "Approved & Rejected Applicants", icon: FileCheck },
+    { path: "/upload-data" , label: "Upload Data", icon: FileCheck  },
   ];
 
   // 🔐 Logout Handler
@@ -44,10 +45,10 @@ const AdminLayout = ({ children }) => {
 
           <div>
             <h1 className="text-xl font-bold">
-              National Backward Classes Finance & Development Corporation
+              Channel Partner of NBCFDC
             </h1>
             <p className="text-sm opacity-90">
-              Ministry of Social Justice & Empowerment, Government of India
+              State Bank of India 
             </p>
           </div>
         </div>
@@ -75,7 +76,7 @@ const AdminLayout = ({ children }) => {
                 <Link key={item.path} to={item.path}>
                   <Button
                     variant="ghost"
-                    className={`w-full justify-start ${
+                    className={`w-full justify-start  px-[10px] ${
                       isActive
                         ? "bg-sidebar-accent text-sidebar-primary font-semibold"
                         : "text-gray-500 hover:bg-sidebar-accent/50 hover:text-black"

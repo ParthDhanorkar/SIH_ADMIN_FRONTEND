@@ -3,8 +3,21 @@ import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Search, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -32,11 +45,9 @@ const getAiScoring = (row) => {
   const fraudProbability = 0.02 + 0.05 * normalizedAmount;
 
   const final =
-    0.7 * (1 - riskScore) +
-    0.3 * needScore -
-    fraudProbability;
+    0.7 * (1 - riskScore) + 0.3 * needScore - fraudProbability;
 
-  const finalEligibilityScore = Math.max(0.30, Math.min(0.95, final));
+  const finalEligibilityScore = Math.max(0.3, Math.min(0.95, final));
 
   let band =
     finalEligibilityScore >= 0.8
@@ -73,13 +84,15 @@ const LoanApproval = () => {
   const [selectedScheme, setSelectedScheme] = useState("all");
   const [selectedRiskBand, setSelectedRiskBand] = useState("all");
 
-  // Fetch pending applications
+  // Fetch ONLY PENDING applications from backend
   useEffect(() => {
     const fetchPending = async () => {
       try {
         setLoading(true);
 
-        const res = await fetch("http://localhost:3000/api/loan-approval/pending");
+        const res = await fetch(
+          "http://localhost:3000/loan/loan-approval/pending"
+        );
 
         if (!res.ok) {
           throw new Error("API returned status " + res.status);
@@ -112,7 +125,9 @@ const LoanApproval = () => {
           return {
             id: row.id,
             scheme: row.scheme || "N/A",
-            beneficiary: row.beneficiary || `Beneficiary (${row.aadhar_no?.slice(-4)})`,
+            beneficiary:
+              row.beneficiary ||
+              `Beneficiary (${row.aadhar_no?.slice(-4) || "XXXX"})`,
             amount,
             tenure: row.tenure || 0,
             aadhar_no: row.aadhar_no,
@@ -137,7 +152,7 @@ const LoanApproval = () => {
     };
 
     fetchPending();
-  }, []);
+  }, [toast]);
 
   const handleApprove = (app) => {
     toast({
@@ -174,13 +189,17 @@ const LoanApproval = () => {
         app.beneficiary.toLowerCase().includes(term) ||
         (app.scheme || "").toLowerCase().includes(term);
 
-      const matchScheme = selectedScheme === "all" || app.scheme === selectedScheme;
+      const matchScheme =
+        selectedScheme === "all" || app.scheme === selectedScheme;
 
       const matchRisk =
         selectedRiskBand === "all" ||
-        (selectedRiskBand === "low" && app.bandClassification.includes("Low Risk")) ||
-        (selectedRiskBand === "medium" && app.bandClassification.includes("Medium Risk")) ||
-        (selectedRiskBand === "high" && app.bandClassification.includes("High Risk"));
+        (selectedRiskBand === "low" &&
+          app.bandClassification.includes("Low Risk")) ||
+        (selectedRiskBand === "medium" &&
+          app.bandClassification.includes("Medium Risk")) ||
+        (selectedRiskBand === "high" &&
+          app.bandClassification.includes("High Risk"));
 
       return matchSearch && matchScheme && matchRisk;
     });
@@ -191,7 +210,9 @@ const LoanApproval = () => {
       <div className="p-8">
         <Card className="shadow border h-[80vh]">
           <CardHeader>
-            <CardTitle className="text-3xl font-bold">Pending Applications</CardTitle>
+            <CardTitle className="text-3xl font-bold">
+              Pending Applications
+            </CardTitle>
 
             {/* Filters */}
             <div className="flex gap-4 mt-4">
@@ -207,7 +228,10 @@ const LoanApproval = () => {
               </div>
 
               {/* Scheme Filter */}
-              <Select value={selectedScheme} onValueChange={setSelectedScheme}>
+              <Select
+                value={selectedScheme}
+                onValueChange={setSelectedScheme}
+              >
                 <SelectTrigger className="w-[220px]">
                   <SelectValue placeholder="Scheme" />
                 </SelectTrigger>
@@ -222,7 +246,10 @@ const LoanApproval = () => {
               </Select>
 
               {/* Risk Filter */}
-              <Select value={selectedRiskBand} onValueChange={setSelectedRiskBand}>
+              <Select
+                value={selectedRiskBand}
+                onValueChange={setSelectedRiskBand}
+              >
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Risk" />
                 </SelectTrigger>
@@ -263,7 +290,9 @@ const LoanApproval = () => {
                     <TableRow key={app.id} className="hover:bg-gray-50">
                       <TableCell>{app.id}</TableCell>
                       <TableCell>{app.scheme}</TableCell>
-                      <TableCell>₹{app.amount.toLocaleString("en-IN")}</TableCell>
+                      <TableCell>
+                        ₹{app.amount.toLocaleString("en-IN")}
+                      </TableCell>
                       <TableCell>{app.tenure} months</TableCell>
 
                       <TableCell>

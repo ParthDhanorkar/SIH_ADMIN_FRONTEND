@@ -4,6 +4,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const { createClient } = require("@supabase/supabase-js");
 
+
 dotenv.config();
 
 const app = express();
@@ -38,10 +39,12 @@ const clean = (obj = null) => {
 // Import Routes
 const loanApprovalRoute = require("./routes/loanApprovalRoute.js");
 const riskbandRouter = require("./routes/riskband.js");
+const loanHistoryRoute = require("./routes/loanHistoryRoute.js");
 
 // Mount Routes
 app.use("/loan", loanApprovalRoute);
 app.use("/riskband", riskbandRouter);
+app.use("/api", loanHistoryRoute);
 
 // Start Server
 const PORT = process.env.PORT || 8000;

@@ -105,7 +105,7 @@ async function generateRiskBand(supabase, loanId) {
 
         // 3️⃣ Fetch merged loan structure from your API itself
         const allDataResponse = await axios.get(
-            `http://localhost:5000/loan/${loanId}`
+            `http://localhost:3000/loan/${loanId}`
         );
 
         const fullInput = allDataResponse.data;
