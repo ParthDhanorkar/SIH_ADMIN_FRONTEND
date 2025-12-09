@@ -1,5 +1,5 @@
 // src/pages/ApproveRejectLoan.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableHead, TableRow, TableCell, TableBody } from "@/components/ui/table";
@@ -244,7 +244,198 @@ const ApproveRejectLoan = () => {
     });
   };
 
-  
+  const input = {
+    "loan_application": {
+      "ration_card_number": null
+    },
+    "beneficiary": {
+      "full_name": "Lila Krishna",
+      "age": 38,
+      "gender": "male",
+      "phone_no": "9112351066",
+      "address": "03/425, Seshadri Zila, Amravati 589136",
+      "income_yearly": 325747,
+      "state": "Maharashtra",
+      "district": "Pune",
+      "occupation": "Salaried_Govt",
+      "registration_date": "2025-07-20",
+      "password": "jX%p0C1bE&",
+      "caste": null
+    },
+    "apply_for_loan": {
+      "desired_loan_amount": 55555,
+      "desired_tenure": 99,
+      "purpose_of_loan": "personal amount hbc"
+    },
+    "track_application": {
+      "applied_on": "2025-12-08T23:43:39.154587+00:00",
+      "loan_amount_applied": "55555",
+      "scheme": "Micro-Finance – Small Loan for Individuals",
+      "tenure_applied": 99,
+      "loan_amount_approved": null,
+      "tenure_approved": null,
+      "final_accept_by_user": null,
+      "status": null
+    },
+    "bank_details": {
+      "account_holder_name": "NA",
+      "bank_name": "NA",
+      "account_no": "0",
+      "ifsc_code": "NA000000000",
+      "branch_name": "NA",
+      "upi_id": "NA"
+    },
+    "expenses_and_comodities": {
+      "elec_account_no": null,
+      "user_provider_avg_recharge_amount": null,
+      "user_provider_avg_recharge_frequency": null,
+      "user_provider_name": null,
+      "api_provider_avg_recharge_amount": null,
+      "api_provider_avg_recharge_frequency": null,
+      "api_provider_name": null,
+      "user_lpg_consumer_no": null,
+      "user_refills_in_last_3m": null,
+      "user_average_refill_cost": null,
+      "user_average_refill_interval_days": null,
+      "provider_lpg_consumer_no": null,
+      "provider_refills_in_last_3m": null,
+      "provider_average_refill_cost": null,
+      "provider_average_refill_interval_days": null,
+      "remarks": null
+    },
+    "income_asset": {
+      "primary_income_source": "coding coding",
+      "monthly_income": 6969,
+      "annual_income": 59595,
+      "asset_count": 5,
+      "estimated_asset_value": 10000
+    },
+    "beneficiary_status": {
+      "mgnrega": false,
+      "pm_ujjwala_yojana": false,
+      "pm_jay": false,
+      "enrolled_in_pension_scheme": false
+    },
+    "electricity_bill": {
+      "elec_account_no": "EACC-990012549935-4173",
+      "elec_total_bills": 3,
+      "elec_total_bill_amt_3m": 3603,
+      "elec_avg_bill_amt_3m": 1201,
+      "elec_on_time_bills_3m": 2,
+      "elec_late_bills_3m": 1,
+      "elec_total_delay_days_3m": 4,
+      "elec_max_delay_days_3m": 4,
+      "elec_outstanding_amount_current": 150,
+      "sudden_drop_index": -2.07,
+      "flag": 1
+    },
+    "water_bill": {
+      "water_total_bills_3m": 3,
+      "water_on_time_bills_3m": 1,
+      "water_late_bills_3m": 3,
+      "water_total_delay_days_3m": 2,
+      "water_max_delay_days_3m": 5,
+      "water_any_disconnection_flag": 1,
+      "water_outstanding_amt_current": 885.51
+    },
+    "ration_card": {
+      "ration_card_no": "766501136157",
+      "family_head_name": "Lila Krishna",
+      "aadhar_no_masked": "XXXX-XXXX-9935",
+      "household_size": 4,
+      "earners_cnt": 3,
+      "dependents_cnt": 1,
+      "dependency_ratio": 0.33,
+      "ration_card_category": "BPL"
+    }
+  }
+
+  function mapToModel(input, previousLoans = []) {
+    const appliedDate = new Date(input.track_application.applied_on);
+    const today = new Date();
+    // Calculate repayments
+    const diffMonths =
+      (today.getFullYear() - appliedDate.getFullYear()) * 12 +
+      (today.getMonth() - appliedDate.getMonth());
+    const repayments_made = diffMonths > 0 ? diffMonths : 0;
+
+    const loanAmountSanctioned = Number(input.track_application.loan_amount_applied) || 0;
+    const loanAmountDisbursed = Number(input.track_application.loan_amount_approved) || 0;
+
+    const emi = input.apply_for_loan?.emi_amount || 0;
+    const totalAmountRepaid = emi * repayments_made;
+
+    const previousLoansCount = previousLoans.length;
+    const repeatBorrowerFlag = previousLoansCount > 0 ? 1 : 0;
+
+    // Electricity and Water derived
+    const totalBills =
+      (input.electricity_bill?.elec_total_bills || 0) +
+      (input.water_bill?.water_total_bills_3m || 0);
+
+    const onTimeBills =
+      (input.electricity_bill?.elec_on_time_bills_3m || 0) +
+      (input.water_bill?.water_on_time_bills_3m || 0);
+
+    const utilOnTimeRatio = totalBills > 0 ? (onTimeBills / totalBills) : 0;
+
+    const avgDelay =
+      ((input.electricity_bill?.elec_total_delay_days_3m || 0) +
+        (input.water_bill?.water_total_delay_days_3m || 0)) / 2;
+
+    const maxDelay = Math.max(
+      input.electricity_bill?.elec_max_delay_days_3m || 0,
+      input.water_bill?.water_max_delay_days_3m || 0
+    );
+
+    const outstanding =
+      (input.electricity_bill?.elec_outstanding_amount_current || 0) +
+      (input.water_bill?.water_outstanding_amt_current || 0);
+
+    return {
+      // CRITICAL
+      loan_amount_sanctioned: loanAmountSanctioned,
+      loan_amount_disbursed: loanAmountDisbursed,
+      loan_tenure_months: input.track_application.tenure_approved || 0,
+      interest_rate: input.apply_for_loan?.interest_rate || 12,
+      emi_amount: emi,
+      repayments_made: repayments_made,
+      total_amount_repaid: totalAmountRepaid,
+
+      // RANDOM 0–5 (as requested)
+      dpd_days: Math.floor(Math.random() * 6), // 0,1,2,3,4,5
+
+      default_flag: 0,
+      npa_status: 0,
+
+      repeat_borrower_flag: repeatBorrowerFlag,
+      previous_loans_count: previousLoansCount,
+      previous_defaults_count: 0,
+
+      // SMART DEFAULTS (NO RANDOM)
+      loan_utilization_match_flag: input.apply_for_loan?.purpose_of_loan ? 1 : 0,
+      cashflow_seasonality_score:
+        input.beneficiary.occupation === "Salaried_Govt" ? 0 : 2,
+      inventory_purchase_ratio:
+        input.beneficiary.occupation === "business" ? 0.6 : 0.2,
+      business_monthly_revenue: input.income_asset.monthly_income || 0,
+      business_operational_years:
+        input.beneficiary.registration_date
+          ? calculateYears(input.beneficiary.registration_date)
+          : 1
+      ,
+
+      // UTILITIES (COMPUTED)
+      util_on_time_ratio: utilOnTimeRatio,
+      util_avg_delay_days: avgDelay,
+      util_max_delay_days: maxDelay,
+      util_total_outstanding_12m: outstanding,
+      util_any_outstanding_flag: outstanding > 0 ? 1 : 0
+    };
+  }
+
+  const ans = mapToModel();
+
 
   const renderTable = (label, data, searchTerm, setSearchTerm, selectedScheme, setSelectedScheme, selectedRiskBand, setSelectedRiskBand) => {
     const filteredData = filterApplications(data, searchTerm, selectedScheme, selectedRiskBand);
@@ -350,10 +541,10 @@ const ApproveRejectLoan = () => {
                         <TableCell>
                           <span
                             className={`px-3 py-1 rounded-full text-sm font-medium ${app.bandClassification.includes("Low Risk")
-                                ? "bg-green-100 text-green-700"
-                                : app.bandClassification.includes("Medium Risk")
-                                  ? "bg-orange-100 text-orange-700"
-                                  : "bg-red-100 text-red-700"
+                              ? "bg-green-100 text-green-700"
+                              : app.bandClassification.includes("Medium Risk")
+                                ? "bg-orange-100 text-orange-700"
+                                : "bg-red-100 text-red-700"
                               }`}
                           >
                             {app.bandClassification}

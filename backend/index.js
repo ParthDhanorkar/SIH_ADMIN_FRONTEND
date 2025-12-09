@@ -3,7 +3,6 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const { createClient } = require("@supabase/supabase-js");
-const loanApprovalRoute = require("./routes/loanApprovalRoute.js");
 
 dotenv.config();
 
@@ -16,6 +15,9 @@ const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY
 );
+
+// Make Supabase available everywhere
+app.locals.supabase = supabase;
 
 // Helper to remove duplicate columns
 const clean = (obj = null) => {
@@ -32,6 +34,22 @@ const clean = (obj = null) => {
   for (const key of remove) delete obj[key];
   return obj;
 };
+
+// Import Routes
+const loanApprovalRoute = require("./routes/loanApprovalRoute.js");
+const riskbandRouter = require("./routes/riskband.js");
+
+// Mount Routes
+app.use("/loan", loanApprovalRoute);
+app.use("/riskband", riskbandRouter);
+
+// Start Server
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => {
+  console.log(`Server running on PORT ${PORT}`);
+});
+
+
 
 app.get("/loan/:loanId", async (req, res) => {
   const { loanId } = req.params;
@@ -175,9 +193,4 @@ app.get("/loan/:loanId", async (req, res) => {
   }
 });
 
-// =======================================================
-// REGISTER Loan Approval Routes
-// =======================================================
-app.use("/api", loanApprovalRoute);
-
-app.listen(3000, () => console.log("🚀 Server running on port 3000"));
+module.exports = app;
