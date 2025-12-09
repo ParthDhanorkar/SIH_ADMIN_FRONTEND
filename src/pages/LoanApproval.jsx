@@ -1,128 +1,155 @@
 // src/pages/LoanApproval.jsx
+import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, CheckCircle, XCircle, FileText, Download, Info, Search } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Search, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+
 import ScoreBreakdownDialog from "../components/ScoreBreakdownDialog";
 import ReviewApplicationDialog from "../components/ReviewApplicationDialog";
 
-// Updated Mock Data with new AI attributes
-const mockApplications = [
-  {
-    id: "LA001",
-    scheme: "Micro Enterprise Loan",
-    beneficiary: "Rajesh Kumar",
-    amount: 50000,
-    tenure: 24,
-    creditScore: 720,
-    riskScore: 0.12,
-    fraudProbability: 0.02,
-    needScore: 0.85,
-    estimatedIncome: 35000,
-    estimatedSafeLoan: 80000,
-    bandClassification: "Low Risk - High Need",
-    finalEligibilityScore: 0.89,
-    applicationDate: "2025-09-28",
-    status: "Pending",
-  },
-  {
-    id: "LA002",
-    scheme: "Self Employment Loan",
-    beneficiary: "Priya Sharma",
-    amount: 75000,
-    tenure: 36,
-    creditScore: 680,
-    riskScore: 0.28,
-    fraudProbability: 0.05,
-    needScore: 0.65,
-    estimatedIncome: 42000,
-    estimatedSafeLoan: 70000,
-    bandClassification: "Medium Risk - Medium Need",
-    finalEligibilityScore: 0.71,
-    applicationDate: "2025-09-29",
-    status: "Pending",
-  },
-  {
-    id: "LA003",
-    scheme: "Small Business Loan",
-    beneficiary: "Amit Patel",
-    amount: 100000,
-    tenure: 48,
-    creditScore: 750,
-    riskScore: 0.08,
-    fraudProbability: 0.01,
-    needScore: 0.92,
-    estimatedIncome: 55000,
-    estimatedSafeLoan: 120000,
-    bandClassification: "Low Risk - High Need",
-    finalEligibilityScore: 0.94,
-    applicationDate: "2025-09-30",
-    status: "Pending",
-  },
-  {
-    id: "LA004",
-    scheme: "Women Entrepreneurship Loan",
-    beneficiary: "Sunita Reddy",
-    amount: 60000,
-    tenure: 24,
-    creditScore: 650,
-    riskScore: 0.32,
-    fraudProbability: 0.03,
-    needScore: 0.74,
-    estimatedIncome: 38000,
-    estimatedSafeLoan: 65000,
-    bandClassification: "Medium Risk - High Need",
-    finalEligibilityScore: 0.64,
-    applicationDate: "2025-10-01",
-    status: "Pending",
-  },
-  {
-    id: "LA005",
-    scheme: "Artisan Support Loan",
-    beneficiary: "Vikram Singh",
-    amount: 45000,
-    tenure: 12,
-    creditScore: 580,
-    riskScore: 0.52,
-    fraudProbability: 0.09,
-    needScore: 0.55,
-    estimatedIncome: 28000,
-    estimatedSafeLoan: 40000,
-    bandClassification: "High Risk - Medium Need",
-    finalEligibilityScore: 0.42,
-    applicationDate: "2025-10-01",
-    status: "Pending",
-  },
-];
+// Helper: Convert text → number safely
+const parseAmount = (val) => {
+  if (!val) return 0;
+  if (typeof val === "number") return val;
+  const n = parseInt(String(val).replace(/[^\d]/g, ""), 10);
+  return isNaN(n) ? 0 : n;
+};
+
+// Generate frontend AI scoring only if backend doesn't send it
+const getAiScoring = (row) => {
+  const amount = parseAmount(row.loan_amount_applied);
+  const tenure = row.tenure_applied || 0;
+
+  const normalizedAmount = Math.min(amount / 200000, 1);
+  const normalizedTenure = Math.min(tenure / 60, 1);
+
+  const needScore = 0.6 + 0.3 * (1 - normalizedAmount);
+  const riskScore = 0.25 + 0.5 * normalizedAmount;
+  const fraudProbability = 0.02 + 0.05 * normalizedAmount;
+
+  const final =
+    0.7 * (1 - riskScore) +
+    0.3 * needScore -
+    fraudProbability;
+
+  const finalEligibilityScore = Math.max(0.30, Math.min(0.95, final));
+
+  let band =
+    finalEligibilityScore >= 0.8
+      ? "Low Risk - High Need"
+      : finalEligibilityScore >= 0.6
+      ? "Medium Risk - High Need"
+      : finalEligibilityScore >= 0.45
+      ? "High Risk - Medium Need"
+      : "High Risk - Low Need";
+
+  return {
+    creditScore: Math.round(750 - normalizedAmount * 150),
+    riskScore,
+    fraudProbability,
+    needScore,
+    estimatedIncome: 30000 + tenure * 500,
+    estimatedSafeLoan: amount + 20000,
+    bandClassification: band,
+    finalEligibilityScore,
+  };
+};
 
 const LoanApproval = () => {
   const { toast } = useToast();
+
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [scoreBreakdown, setScoreBreakdown] = useState(null);
-  
-  // Filter states
+
+  // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedScheme, setSelectedScheme] = useState("all");
   const [selectedRiskBand, setSelectedRiskBand] = useState("all");
 
+  // Fetch pending applications
+  useEffect(() => {
+    const fetchPending = async () => {
+      try {
+        setLoading(true);
+
+        const res = await fetch("http://localhost:3000/api/loan-approval/pending");
+
+        if (!res.ok) {
+          throw new Error("API returned status " + res.status);
+        }
+
+        const apiData = await res.json();
+        console.log("🔵 API Response:", apiData);
+
+        if (!apiData.success || !Array.isArray(apiData.applications)) {
+          throw new Error("Invalid backend response");
+        }
+
+        const enriched = apiData.applications.map((row) => {
+          const amount = parseAmount(row.amount);
+
+          // Use backend-calculated scores if available
+          const ai = row.finalEligibilityScore
+            ? {
+                creditScore: row.creditScore,
+                riskScore: row.riskScore,
+                fraudProbability: row.fraudProbability,
+                needScore: row.needScore,
+                estimatedIncome: row.estimatedIncome,
+                estimatedSafeLoan: row.estimatedSafeLoan,
+                bandClassification: row.bandClassification,
+                finalEligibilityScore: row.finalEligibilityScore,
+              }
+            : getAiScoring(row);
+
+          return {
+            id: row.id,
+            scheme: row.scheme || "N/A",
+            beneficiary: row.beneficiary || `Beneficiary (${row.aadhar_no?.slice(-4)})`,
+            amount,
+            tenure: row.tenure || 0,
+            aadhar_no: row.aadhar_no,
+            status: row.status || "PENDING",
+            applicationDate: row.applicationDate,
+
+            ...ai,
+          };
+        });
+
+        setApplications(enriched);
+      } catch (err) {
+        console.error("❌ Fetch error:", err);
+        toast({
+          title: "Error fetching applications",
+          description: err.message,
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPending();
+  }, []);
+
   const handleApprove = (app) => {
     toast({
       title: "Loan Approved",
-      description: `Application ${app.id} for ${app.beneficiary} has been approved.`,
+      description: `Application ${app.id} approved.`,
     });
   };
 
   const handleReject = (app) => {
     toast({
       title: "Loan Rejected",
-      description: `Application ${app.id} for ${app.beneficiary} has been rejected.`,
+      description: `Application ${app.id} rejected.`,
       variant: "destructive",
     });
   };
@@ -134,42 +161,45 @@ const LoanApproval = () => {
     return "destructive";
   };
 
-  // Get unique schemes for filter dropdown
-  const uniqueSchemes = [...new Set(mockApplications.map(app => app.scheme))];
+  const uniqueSchemes = useMemo(() => {
+    return [...new Set(applications.map((app) => app.scheme))];
+  }, [applications]);
 
-  // Filter applications
-  const filteredApplications = mockApplications.filter((app) => {
-    const matchesSearch = 
-      app.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.beneficiary.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.scheme.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesScheme = 
-      selectedScheme === "all" || app.scheme === selectedScheme;
-    
-    const matchesRiskBand = 
-      selectedRiskBand === "all" || 
-      (selectedRiskBand === "low" && app.bandClassification.includes("Low Risk")) ||
-      (selectedRiskBand === "medium" && app.bandClassification.includes("Medium Risk")) ||
-      (selectedRiskBand === "high" && app.bandClassification.includes("High Risk"));
-    
-    return matchesSearch && matchesScheme && matchesRiskBand;
-  });
+  const filteredApplications = useMemo(() => {
+    return applications.filter((app) => {
+      const term = searchTerm.toLowerCase();
+
+      const matchSearch =
+        app.id.toLowerCase().includes(term) ||
+        app.beneficiary.toLowerCase().includes(term) ||
+        (app.scheme || "").toLowerCase().includes(term);
+
+      const matchScheme = selectedScheme === "all" || app.scheme === selectedScheme;
+
+      const matchRisk =
+        selectedRiskBand === "all" ||
+        (selectedRiskBand === "low" && app.bandClassification.includes("Low Risk")) ||
+        (selectedRiskBand === "medium" && app.bandClassification.includes("Medium Risk")) ||
+        (selectedRiskBand === "high" && app.bandClassification.includes("High Risk"));
+
+      return matchSearch && matchScheme && matchRisk;
+    });
+  }, [applications, searchTerm, selectedScheme, selectedRiskBand]);
 
   return (
     <AdminLayout>
       <div className="p-8">
         <Card className="shadow border h-[80vh]">
           <CardHeader>
-            <CardTitle className="text-3xl font-bold text-foreground">Pending Applications</CardTitle>
-            
-            {/* Filter Controls */}
+            <CardTitle className="text-3xl font-bold">Pending Applications</CardTitle>
+
+            {/* Filters */}
             <div className="flex gap-4 mt-4">
-              {/* Search Input */}
+              {/* Search */}
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <Input
-                  placeholder="Search by ID, beneficiary, or scheme..."
+                  placeholder="Search application ID, scheme, name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -179,7 +209,7 @@ const LoanApproval = () => {
               {/* Scheme Filter */}
               <Select value={selectedScheme} onValueChange={setSelectedScheme}>
                 <SelectTrigger className="w-[220px]">
-                  <SelectValue placeholder="Filter by Scheme" />
+                  <SelectValue placeholder="Scheme" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Schemes</SelectItem>
@@ -191,13 +221,13 @@ const LoanApproval = () => {
                 </SelectContent>
               </Select>
 
-              {/* Risk Band Filter */}
+              {/* Risk Filter */}
               <Select value={selectedRiskBand} onValueChange={setSelectedRiskBand}>
                 <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Filter by Risk" />
+                  <SelectValue placeholder="Risk" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Risk Bands</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   <SelectItem value="low">Low Risk</SelectItem>
                   <SelectItem value="medium">Medium Risk</SelectItem>
                   <SelectItem value="high">High Risk</SelectItem>
@@ -205,87 +235,78 @@ const LoanApproval = () => {
               </Select>
             </div>
 
-            {/* Results Counter */}
-            <div className="text-sm text-muted-foreground mt-2">
-              Showing {filteredApplications.length} of {mockApplications.length} applications
-            </div>
+            {/* Count */}
+            <p className="text-sm text-muted-foreground mt-2">
+              {loading
+                ? "Loading..."
+                : `Showing ${filteredApplications.length} of ${applications.length} applications`}
+            </p>
           </CardHeader>
 
-          <CardContent className="flex-1 overflow-hidden">
-            <div className="relative border rounded-md flex flex-col h-[50vh]">
-              <Table className="w-full border-collapse">
-                <TableHeader className="sticky top-0 bg-white z-50 shadow-md">
-                  <TableRow className="hover:bg-gray-50 transition">
-                    <TableHead>Application ID</TableHead>
-                    <TableHead>Scheme</TableHead>
-                    <TableHead>Loan Amount</TableHead>
-                    <TableHead>Tenure</TableHead>
-                    <TableHead>Approval %</TableHead>
-                    <TableHead>Band Classification</TableHead>
-                    <TableHead className="text-center">Preview</TableHead>
-                  </TableRow>
-                </TableHeader>
+          <CardContent className="overflow-auto h-[50vh]">
+            <Table>
+              <TableHeader className="sticky top-0 bg-white shadow">
+                <TableRow>
+                  <TableHead>Application ID</TableHead>
+                  <TableHead>Scheme</TableHead>
+                  <TableHead>Loan Amount</TableHead>
+                  <TableHead>Tenure</TableHead>
+                  <TableHead>Approval %</TableHead>
+                  <TableHead>Band</TableHead>
+                  <TableHead className="text-center">Preview</TableHead>
+                </TableRow>
+              </TableHeader>
 
-                <TableBody>
-                  {filteredApplications.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        No applications found matching your filters
+              <TableBody>
+                {!loading &&
+                  filteredApplications.map((app) => (
+                    <TableRow key={app.id} className="hover:bg-gray-50">
+                      <TableCell>{app.id}</TableCell>
+                      <TableCell>{app.scheme}</TableCell>
+                      <TableCell>₹{app.amount.toLocaleString("en-IN")}</TableCell>
+                      <TableCell>{app.tenure} months</TableCell>
+
+                      <TableCell>
+                        <button
+                          onClick={() => setScoreBreakdown(app)}
+                          className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full hover:bg-blue-100"
+                        >
+                          {(app.finalEligibilityScore * 100).toFixed(1)}%
+                        </button>
+                      </TableCell>
+
+                      <TableCell>
+                        <span
+                          className={`px-3 py-1 rounded-full ${
+                            app.bandClassification.includes("Low Risk")
+                              ? "bg-green-100 text-green-700"
+                              : app.bandClassification.includes("Medium Risk")
+                              ? "bg-orange-100 text-orange-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {app.bandClassification}
+                        </span>
+                      </TableCell>
+
+                      <TableCell className="text-center">
+                        <button
+                          onClick={() => setSelectedApplication(app)}
+                          className="p-2 rounded-full hover:bg-gray-200"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
                       </TableCell>
                     </TableRow>
-                  ) : (
-                    filteredApplications.map((app) => (
-                      <TableRow key={app.id} className="hover:bg-gray-50">
-                        <TableCell>
-                          <span className="px-2 py-1 text-xs bg-gray-100 rounded-md">{app.id}</span>
-                        </TableCell>
-
-                        <TableCell>{app.scheme}</TableCell>
-                        <TableCell>₹{app.amount.toLocaleString()}</TableCell>
-                        <TableCell>{app.tenure} months</TableCell>
-
-                        <TableCell>
-                          <div
-                            onClick={() => setScoreBreakdown(app)}
-                            className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm cursor-pointer hover:bg-blue-100 transition"
-                          >
-                            {(app.finalEligibilityScore * 100).toFixed(1)}%
-                          </div>
-                        </TableCell>
-
-                        <TableCell>
-                          <span
-                            className={`px-3 py-1 rounded-full text-sm font-medium ${
-                              app.bandClassification.includes("Low Risk")
-                                ? "bg-green-100 text-green-700"
-                                : app.bandClassification.includes("Medium Risk")
-                                ? "bg-orange-100 text-orange-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {app.bandClassification}
-                          </span>
-                        </TableCell>
-
-                        <TableCell className="text-center">
-                          <button
-                            onClick={() => setSelectedApplication(app)}
-                            className="p-2 rounded-full hover:bg-gray-100 transition"
-                          >
-                            <Eye className="h-4 w-4 text-gray-600" />
-                          </button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                  ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </div>
 
-      <ScoreBreakdownDialog 
+      {/* Dialogs */}
+      <ScoreBreakdownDialog
         scoreBreakdown={scoreBreakdown}
         onClose={() => setScoreBreakdown(null)}
       />
@@ -295,6 +316,7 @@ const LoanApproval = () => {
         onClose={() => setSelectedApplication(null)}
         handleApprove={handleApprove}
         handleReject={handleReject}
+        getScoreBadge={getScoreBadge}
       />
     </AdminLayout>
   );
